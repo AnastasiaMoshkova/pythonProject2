@@ -169,6 +169,8 @@ class TimeSeriesForecast:
 
 
 
+
+
 d=Data.dataLoaderFromJson('NP')
 #d=Data('NP', 'index_name', [1,2,3,4], [1,2,3,4], [1,2,3], emissions=[], recalculation=False)
 d.dataVisualization()
