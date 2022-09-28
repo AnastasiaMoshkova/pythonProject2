@@ -144,3 +144,4 @@ a.predict()
 print(a.predictions)
 print(a.meanSquaredError([1,2]))
 '''
+
