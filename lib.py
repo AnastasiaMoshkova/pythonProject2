@@ -1,7 +1,8 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 import algorithms as al
-
+import warnings
+warnings.filterwarnings("ignore")#, category=FutureWarning)
 import enum
 
 NationalProjectsName=['NP',]
@@ -51,9 +52,9 @@ class Data():
         '''Здесь будет парсер json'''
         nationalProject='NP'
         index_name='index_name'
-        monthInterval=[1,2,3,4]
-        fact=[1,2,3,4]
-        plan=[1,2,3,4]
+        monthInterval=[1,2,3,4,5,6,7,8,9,10]
+        fact=[1,2,3,4,5,6,7,8,9,10]
+        plan=[1,2,3,4,5,6,7,8,9,10]
         emissions=[]
         recalculation=False
         cls.isDataValid(nationalProject, index_name, monthInterval, fact, plan)
@@ -86,7 +87,6 @@ class Data():
             'plan':self.plan,
             'recalculation':self.recalculation
         }
-
 
 
 
@@ -132,56 +132,113 @@ class DataTransformer(EmissionFinder):
         '''
 
 
-class TimeSeriesForecast:
+class TimeSeriesForecast():
     def __init__(self,fact):
         self.fact=fact
-        self.algorithmInfo=[]
+        self.algorithmInfo= []
+
 
     def TestTrainSplit(self,persent):
-        self.train=self.fact[:,round(persent/100*len(self.fact))]
-        self.test=self.fact[round(persent/100*len(self.fact)),:]
+        self.train=self.fact[:len(self.fact)-round(persent/100*len(self.fact))]
+        self.test=self.fact[len(self.fact)-round(persent/100*len(self.fact)):]
+        print(self.train,self.test)
 
-    def movingAverage(self, train, horizont, nums):
-        history = list(train)
-        for i in range(horizont):
-            history.append(pd.Series(history).rolling(nums).mean().iloc[-1])
-        return history[-horizont,:]
 
-    def simpleExpSmoothing(self, horizont):
-        name='simpleExpSmoothing'
-        pass
-
-    def methodHolt(self, horizont):
-        pass
-
-    def exponentialSmoothing(self, horizont):
-        pass
-
-    def ARIMA_(self, horizont):
-        pass
 
     def chooseBestAlgorithm(self):
-        self.algorithmInfo.append()
+        self.ma = al.MovingAverage(self.train)
+        self.holt = al.HoltMethod(self.train)
+        self.es = al.ExponentialSmothing(self.train)
+        self.ses = al.SimpleExponentialSmothing(self.train)
+        self.arima=al.ARIMAMethod(self.train)
 
+        horizont=len(self.test)
+        '''
+        потом оптимизировать
+        '''
+        for nums in self.ma.parameters:
+            try:
+                self.algorithmInfo.append(
+                    {
+                        'algorithm':self.ma.name,
+                        'prediction':self.ma.predict(horizont,nums),
+                        'parameters':{'nums':nums},
+                        'accuracy':{},
+                        'error':self.ma.meanSquaredError(self.test)
+                    })
+            except Exception:
+                continue
 
+        for level in self.holt.parameters['level']:
+            for smoothing_slope in self.holt.parameters['smoothing_trend']:
+                try:
+                    self.holt.fit(level,smoothing_slope)
+                    self.algorithmInfo.append(
+                        {
+                            'algorithm':self.holt.name,
+                            'prediction':self.holt.predict(horizont),
+                            'parameters': {'level':level, 'smoothing_trend':smoothing_slope},
+                            'accuracy': {},
+                            'error':self.holt.meanSquaredError(self.test)
+                        })
+                except Exception:
+                    continue
 
+        for periods in self.es.parameters['periods']:
+            for trend in self.es.parameters['trend']:
+                try:
+                    self.es.fit(periods,trend)
+                    self.algorithmInfo.append(
+                        {
+                            'algorithm':self.es.name,
+                            'prediction':self.es.predict(horizont),
+                            'parameters': {'periods':periods, 'trend':trend},
+                            'accuracy': self.accuracy(self.test),
+                            'error':self.es.meanSquaredError(self.test)
+                        })
+                except Exception:
+                    continue
 
+        for level in self.ses.parameters['level']:
+            try:
+                self.ses.fit(level)
+                self.algorithmInfo.append(
+                    {
+                        'algorithm':self.ses.name,
+                        'prediction':self.ses.predict(horizont),
+                        'parameters': {'level':level},
+                        'accuracy': self.accuracy(self.test),
+                        'error':self.ses.meanSquaredError(self.test)
+                    })
+            except Exception:
+                continue
 
-
-
-
-
-
-
-
-
-
-
+        for ord1 in self.arima.parameters['ord1']:
+            for ord2 in  self.arima.parameters['ord2']:
+                for ord3 in self.arima.parameters['ord3']:
+                    try:
+                        self.arima.fit(ord1,ord2,ord3)
+                        self.algorithmInfo.append(
+                            {
+                                'algorithm':self.arima.name,
+                                'prediction':self.arima.predict(horizont),
+                                'parameters': {'ord1':ord1,'ord2':ord2, 'ord3':ord3 },
+                                'accuracy': self.accuracy(self.test),
+                                'error':self.arima.meanSquaredError(self.test)
+                            })
+                    except Exception:
+                        continue
+        return sorted(self.algorithmInfo, key=lambda d: d['error'])[0]
 
 
 
 d=Data.dataLoaderFromJson('NP')
 #d=Data('NP', 'index_name', [1,2,3,4], [1,2,3,4], [1,2,3], emissions=[], recalculation=False)
-d.dataVisualization()
-print(d.dataToDict())
+#d.dataVisualization()
+print(d.dataToDict()['fact'])
+t= TimeSeriesForecast(d.dataToDict()['fact'])
+t.TestTrainSplit(20)
+print(t.chooseBestAlgorithm())
+print(t.algorithmInfo)
+
 
