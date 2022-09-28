@@ -240,7 +240,3 @@ t= TimeSeriesForecast(d.dataToDict()['fact'])
 t.TestTrainSplit(20)
 print(t.chooseBestAlgorithm())
 print(t.algorithmInfo)
-
-
-
-
