@@ -138,6 +138,7 @@ print(a.meanSquaredError([1,2]))
 
 
 
+
 '''
 a=MovingAverage([1,2,3,4,5],2,2)
 print(a.predictions)
