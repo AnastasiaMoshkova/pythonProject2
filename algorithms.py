@@ -128,6 +128,7 @@ class ARIMAMethod(Algorithm):
 
 
 
+
 a=HoltMethod([1,2,3,4,5])
 print(a.predictions)
 a.fit(0.1,0.1)
