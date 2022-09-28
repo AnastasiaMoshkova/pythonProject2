@@ -1,4 +1,6 @@
 import matplotlib.pyplot as plt
+import pandas as pd
+import algorithms as al
 
 import enum
 
@@ -139,8 +141,11 @@ class TimeSeriesForecast:
         self.train=self.fact[:,round(persent/100*len(self.fact))]
         self.test=self.fact[round(persent/100*len(self.fact)),:]
 
-    def movingAverage(self, horizont):
-        pass
+    def movingAverage(self, train, horizont, nums):
+        history = list(train)
+        for i in range(horizont):
+            history.append(pd.Series(history).rolling(nums).mean().iloc[-1])
+        return history[-horizont,:]
 
     def simpleExpSmoothing(self, horizont):
         name='simpleExpSmoothing'
@@ -157,6 +162,10 @@ class TimeSeriesForecast:
 
     def chooseBestAlgorithm(self):
         self.algorithmInfo.append()
+
+
+
+
 
 
 
